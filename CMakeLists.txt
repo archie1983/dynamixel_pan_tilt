@@ -9,7 +9,7 @@ project(dynamixel_pan_tilt)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   dynamixel_sdk
-  dynamixel_workbench
+  dynamixel_sdk_examples
   dynamixel_workbench_msgs
   roscpp
   rospy
