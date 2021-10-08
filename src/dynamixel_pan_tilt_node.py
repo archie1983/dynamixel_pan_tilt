@@ -68,26 +68,28 @@ ADDR_PRESENT_POSITION   = 132
 PROTOCOL_VERSION            = 2.0               # See which protocol version is used in the Dynamixel
 
 # Default setting
-DXL1_ID                     = 11                 # Dynamixel ID : 1
-DXL2_ID	                    = 12
-BAUDRATE                    = 1000000             # Dynamixel default baudrate : 57600
-DEVICENAME                  = '/dev/ttyUSB0'    # Check which port is being used on your controller
-                                                # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
+DXL1_ID                     = 11                # Pan Dynamixel ID
+DXL2_ID	                    = 12		# Tilt Dynamixel ID
+BAUDRATE                    = 1000000             # Dynamixel baudrate
+DEVICENAME                  = rospy.get_param('~port', '/dev/dynamixel')
 
-TORQUE_ENABLE               = 1                 # Value for enabling the torque
-TORQUE_DISABLE              = 0                 # Value for disabling the torque
-DXL1_MINIMUM_POSITION_VALUE  = 0               # Dynamixel will rotate between this value
-DXL1_MAXIMUM_POSITION_VALUE  = 4095            # and this value
+TORQUE_ENABLE = 1                 		# Value for enabling the torque
+TORQUE_DISABLE = 0                		# Value for disabling the torque
+DXL1_MINIMUM_POSITION_VALUE  = 0               	# Pan Dynamixel will rotate between this value
+DXL1_MAXIMUM_POSITION_VALUE  = 4095            	# and this value
 
-DXL2_MINIMUM_POSITION_VALUE  = 1024              # Dynamixel will rotate between this value
-DXL2_MAXIMUM_POSITION_VALUE  = 3072            # and this value 
+DXL2_MINIMUM_POSITION_VALUE  = 1024             # Dynamixel will rotate between this value
+DXL2_MAXIMUM_POSITION_VALUE  = 3072            	# and this value
 DXL_MOVING_STATUS_THRESHOLD = 20                # Dynamixel moving status threshold
 
 portHandler = PortHandler(DEVICENAME)
 packetHandler = PacketHandler(PROTOCOL_VERSION)
 
+node_name = rospy.get_param('node_name', 'pan_tilt_node')
+
 k = 4095 / 360
 dxl_zero_pos = 2048
+tilt_multiplier = 1.2
 
 def set_goal_pos_callback(data):
     pan_angle = data.y
@@ -98,12 +100,12 @@ def set_goal_pos_callback(data):
     if (tilt_angle > 180):
         tilt_angle = tilt_angle - 360
 
-    pan_dxl_pos = angle_to_dxl_position(pan_angle, -1)
-    tilt_dxl_pos = angle_to_dxl_position(tilt_angle)
+    pan_dxl_pos = angle_to_dxl_position(pan_angle, flip=-1)
+    tilt_dxl_pos = angle_to_dxl_position(tilt_angle, multiplier=tilt_multiplier)
 
     pan_dxl_pos = clamp(pan_dxl_pos, DXL1_MINIMUM_POSITION_VALUE, DXL1_MAXIMUM_POSITION_VALUE)
     tilt_dxl_pos = clamp(tilt_dxl_pos, DXL2_MINIMUM_POSITION_VALUE, DXL2_MAXIMUM_POSITION_VALUE)
-    
+
     #print ("Pan: %s, Tilt: %s" % (pan_dxl_pos, tilt_dxl_pos))
     dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, pan_dxl_pos)
     dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_POSITION, tilt_dxl_pos)
@@ -118,18 +120,21 @@ def sync_get_present_pos(req):
     res.position2 = dxl2_present_position
     return res
 
-def sync_read_write_py_node():
-    rospy.init_node('sync_read_write_py_node')
+def pan_tilt_node():
+    rospy.init_node('pan_tilt_node')
     rospy.Subscriber('head_rot', Vector3, set_goal_pos_callback)
     rospy.Service('sync_get_position', SyncGetPosition, sync_get_present_pos)
     rospy.spin()
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
-def angle_to_dxl_position(angle, flip = 1):
-    return int(math.floor(dxl_zero_pos + flip * k * angle))
-    
-    
+def angle_to_dxl_position(angle, flip = 1, multiplier = 1):
+    return int(math.floor(dxl_zero_pos + flip * k * multiplier * angle))
+
+def zero_motors():
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, dxl_zero_pos)
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_POSITION, dxl_zero_pos)
+
 
 def main():
     # Open port
@@ -181,9 +186,12 @@ def main():
     else:
         print("DYNAMIXEL2 has been successfully connected")
 
+    print("Zeroing Motors.")
+    zero_motors()
+
     print("Ready to get & set Position.")
 
-    sync_read_write_py_node()
+    pan_tilt_node()
 
 
 if __name__ == '__main__':
