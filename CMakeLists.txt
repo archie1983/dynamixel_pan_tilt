@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamixel_workbench_msgs
   roscpp
   rospy
+  message_generation
   std_msgs
 )
 
@@ -70,10 +71,12 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   dynamixel_workbench_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+#  dynamixel_workbench_msgs#   std_msgs
+
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -107,7 +110,7 @@ add_message_files(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES dynamixel_pan_tilt
-#  CATKIN_DEPENDS dynamixel_sdk dynamixel_workbench dynamixel_workbench_msgs roscpp rospy std_msgs
+ CATKIN_DEPENDS dynamixel_sdk dynamixel_workbench_msgs roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
 

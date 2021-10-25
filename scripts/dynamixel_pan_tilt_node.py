@@ -41,7 +41,7 @@ import math
 from dynamixel_sdk import *
 from dynamixel_sdk_examples.srv import *
 from dynamixel_sdk_examples.msg import *
-from geometry_msgs.msg import Vector3
+from dynamixel_pan_tilt.msg import PanTiltAngle
 
 if os.name == 'nt':
     import msvcrt
@@ -89,19 +89,14 @@ node_name = rospy.get_param('node_name', 'pan_tilt_node')
 
 k = 4095 / 360
 dxl_zero_pos = 2048
+
+# Add offset and multiplier to tilt to make it easier to look down at robot
+tilt_offset = 20
 tilt_multiplier = 1.2
 
 def set_goal_pos_callback(data):
-    pan_angle = data.y
-    tilt_angle = data.x
-
-    if (pan_angle > 180):
-        pan_angle = pan_angle - 360
-    if (tilt_angle > 180):
-        tilt_angle = tilt_angle - 360
-
-    pan_dxl_pos = angle_to_dxl_position(pan_angle, flip=-1)
-    tilt_dxl_pos = angle_to_dxl_position(tilt_angle, multiplier=tilt_multiplier)
+    pan_dxl_pos = angle_to_dxl_position(data.pan_angle, flip=-1)
+    tilt_dxl_pos = angle_to_dxl_position(data.tilt_angle, multiplier=tilt_multiplier, offset=tilt_offset)
 
     pan_dxl_pos = clamp(pan_dxl_pos, DXL1_MINIMUM_POSITION_VALUE, DXL1_MAXIMUM_POSITION_VALUE)
     tilt_dxl_pos = clamp(tilt_dxl_pos, DXL2_MINIMUM_POSITION_VALUE, DXL2_MAXIMUM_POSITION_VALUE)
@@ -122,18 +117,18 @@ def sync_get_present_pos(req):
 
 def pan_tilt_node():
     rospy.init_node('pan_tilt_node')
-    rospy.Subscriber('head_rot', Vector3, set_goal_pos_callback)
+    rospy.Subscriber('head_rot', PanTiltAngle, set_goal_pos_callback)
     rospy.Service('sync_get_position', SyncGetPosition, sync_get_present_pos)
     rospy.spin()
 
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
-def angle_to_dxl_position(angle, flip = 1, multiplier = 1):
-    return int(math.floor(dxl_zero_pos + flip * k * multiplier * angle))
+def angle_to_dxl_position(angle, flip = 1, multiplier = 1, offset = 0):
+    return int(math.floor(dxl_zero_pos + flip * k * (multiplier * angle + offset)))
 
 def zero_motors():
     dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, dxl_zero_pos)
-    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_POSITION, dxl_zero_pos)
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_POSITION, angle_to_dxl_position(tilt_offset))
 
 
 def main():
