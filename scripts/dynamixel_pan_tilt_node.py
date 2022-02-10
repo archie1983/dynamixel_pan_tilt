@@ -117,7 +117,8 @@ def sync_get_present_pos(req):
 
 def pan_tilt_node():
     rospy.init_node('pan_tilt_node')
-    rospy.Subscriber('head_rot', PanTiltAngle, set_goal_pos_callback)
+    pan_tilt_angle_topic = rospy.get_param('pan_tilt_angle_topic', 'head_rot')
+    rospy.Subscriber(pan_tilt_angle_topic, PanTiltAngle, set_goal_pos_callback)
     rospy.Service('sync_get_position', SyncGetPosition, sync_get_present_pos)
     rospy.spin()
 
