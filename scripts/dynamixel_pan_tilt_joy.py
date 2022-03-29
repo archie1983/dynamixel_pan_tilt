@@ -34,11 +34,11 @@ def set_goal_angle_callback(data):
 
         if (data.axes[7] > 0.5):
             pta.pan_angle = pan_angle
-            pta.tilt_angle = tilt_angle + 2
+            pta.tilt_angle = tilt_angle - 2
 
         if (data.axes[7] < -0.5):
             pta.pan_angle = pan_angle
-            pta.tilt_angle = tilt_angle - 2
+            pta.tilt_angle = tilt_angle + 2
         
         rospy.loginfo("Dynamixel 1 angle: %f, Dynamixel 2 angle: %f", pta.pan_angle, pta.tilt_angle)
         if (pta.pan_angle > -160 and pta.tilt_angle > -160):
