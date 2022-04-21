@@ -104,5 +104,14 @@
     </inertial>
     
    </link>
+  
+  <link name="camera_base"/>
+
+    <!--  Joint 2 -->
+  <joint name="camera_base" type="fixed">
+    <parent link="link3"/>
+    <child link="camera_base"/>
+    <origin xyz="0.0 0.0 0.04" rpy="0 0 0"/>
+  </joint>
 
 </robot>
