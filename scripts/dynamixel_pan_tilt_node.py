@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #*******************************************************************************
 # Copyright 2021 ROBOTIS CO., LTD.
@@ -91,7 +91,7 @@ k = 4095 / 360
 dxl_zero_pos = 2048
 
 # Add offset and multiplier to tilt to make it easier to look down at robot
-tilt_offset = 20
+tilt_offset = 0
 tilt_multiplier = 1.2
 
 def set_goal_pos_callback(data):
